@@ -99,6 +99,11 @@ async function refreshStats(){
     if(metR) metR.textContent = `${fmt(left)} punks remaining`;
     const totalEl = $('#total');
     if(totalEl) totalEl.textContent = `${ethers.formatEther(ms)} ETH`;
+    // hero progress bar
+    const progFill=$('#progFill'), progMinted=$('#progMinted');
+    const pct = Number(max)>0 ? Number(tm)/Number(max)*100 : 0;
+    if(progFill) progFill.style.width = pct+'%';
+    if(progMinted) progMinted.textContent = fmt(Number(tm));
   }catch(e){ /* RPC hiccup — retry next tick */ }
 }
 async function refreshMinters(){
@@ -180,14 +185,30 @@ cards.addEventListener('click', async e=>{
 });
 refreshVault();
 
-/* ---------- AGENT MINT SKILL ---------- */
-const skillUrlEl = $('#skillUrl'), copyBtn = $('#copySkill');
+/* ---------- AGENT MINT SKILL + COPY BUTTONS ---------- */
+const API_HOST = API.replace(/^https?:\/\//,'');
+const skillCmdEl = $('#skillCmd'), skillHereEls = document.querySelectorAll('.skill-here');
 const skillUrl = `${API}/skill.md`;
-if(skillUrlEl) skillUrlEl.textContent = skillUrl;
-if(copyBtn) copyBtn.addEventListener('click', async ()=>{
-  try{
-    await navigator.clipboard.writeText(skillUrl);
-    copyBtn.textContent = 'COPIED ✓';
-    setTimeout(()=>copyBtn.textContent='COPY SKILL URL', 1500);
-  }catch(e){ logTape('✗ Copy failed'); }
+if(skillCmdEl) skillCmdEl.textContent = skillUrl;
+skillHereEls.forEach(el=>el.textContent=API_HOST);
+// fill any __SKILLCMD__ placeholders in data-copy attributes
+document.querySelectorAll('[data-copy]').forEach(btn=>{
+  if(btn.dataset.copy.includes('__SKILLCMD__')) btn.dataset.copy = btn.dataset.copy.split('__SKILLCMD__').join(API_HOST);
 });
+async function copyText(txt, btn){
+  try{
+    await navigator.clipboard.writeText(txt);
+    const old = btn.textContent;
+    btn.textContent = 'COPIED ✓';
+    setTimeout(()=>btn.textContent=old, 1500);
+  }catch(e){ logTape('✗ Copy failed'); }
+}
+document.querySelectorAll('.btn-copy').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const t = btn.dataset.copy || btn.dataset.copyTarget;
+    if(t === 'skillCmd' && skillCmdEl) return copyText(skillCmdEl.textContent, btn);
+    if(t) return copyText(t, btn);
+  });
+});
+const contractBtn=$('#copyContract');
+if(contractBtn) contractBtn.addEventListener('click', ()=>copyText(CONTRACT, contractBtn));
