@@ -46,7 +46,7 @@ for(let i=0;i<TOTAL;i++){
   const id=(i+4213); // arbitrary mint ids
   card.innerHTML=`
     <div class="frame">
-      <img src="assets/img/pre-reveal.png" alt="Mystery #${id}" data-idx="${i}" data-revealed="0"/>
+      <img src="assets/img/pre-reveal-glitch.gif" alt="Mystery #${id}" data-idx="${i}" data-revealed="0"/>
       <button class="reveal-btn" data-i="${i}">REVEAL ▸</button>
     </div>
     <div class="meta"><span class="id">#${id}</span><span class="tier">MYSTERY</span></div>`;
