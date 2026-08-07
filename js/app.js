@@ -12,6 +12,11 @@ const abi = [
   "function MAX_SUPPLY() view returns (uint256)",
   "function mintPrice() view returns (uint256)",
   "function WEB_MINT_MAX() view returns (uint256)",
+  "function ownerOf(uint256) view returns (address)",
+  "function balanceOf(address) view returns (uint256)",
+  "function tokenOfOwnerByIndex(address, uint256) view returns (uint256)",
+  "function revealed() view returns (bool)",
+  "function tokenURI(uint256) view returns (string)",
 ];
 
 /* ---------- QTY STEPPER ---------- */
@@ -36,7 +41,7 @@ async function switchToHood(){
   }]});
 }
 btn.addEventListener('click', async ()=>{
-  if(connected){ setConnected(null); return; }
+  if(connected){ setConnected(null); refreshVault(); return; }
   if(window.ethereum){
     try{
       provider = new ethers.BrowserProvider(window.ethereum);
@@ -45,6 +50,7 @@ btn.addEventListener('click', async ()=>{
       if(parseInt(net,16)!==CHAIN_ID){ try{await switchToHood();}catch(_){ logTape('⚠ Switch chain ke Robinhood dulu di wallet lo'); } }
       const a=await provider.send('eth_requestAccounts',[]);
       setConnected(a[0]);
+      refreshVault();
     }catch(e){ logTape('⚠ '+ (e.message||'wallet error')); }
   } else {
     logTape('⚠ No wallet detected. Mint manual butuh Rabby/MetaMask + chain Robinhood (4663).');
@@ -76,7 +82,7 @@ btnMint.disabled=true;
 function setBusy(b){ btnMint.disabled = b || !connected; btnMint.textContent = b?'MINTING…':(connected?'MINT NOW':'CONNECT WALLET TO MINT'); }
 function logTape(m){ const t=$('#tape'); t.insertAdjacentHTML('afterbegin',`<div>${m}</div>`); }
 
-/* ---------- LIVE SUPPLY (read-only, no wallet needed) ---------- */
+/* ---------- LIVE SUPPLY + UNIQUE MINTERS (read-only, no wallet needed) ---------- */
 const fmt = n => n.toLocaleString('en-US');
 async function refreshStats(){
   try{
@@ -94,35 +100,80 @@ async function refreshStats(){
     if(totalEl) totalEl.textContent = `${ethers.formatEther(ms)} ETH`;
   }catch(e){ /* RPC hiccup — retry next tick */ }
 }
-refreshStats();
-setInterval(refreshStats, 15000);
-
-/* ---------- REVEAL GALLERY (demo) ---------- */
-const TOTAL=16;
-const cards=$('#cards');
-cards.innerHTML='';
-for(let i=0;i<TOTAL;i++){
-  const card=document.createElement('div'); card.className='card';
-  card.id='card-'+i;
-  const id=(i+4213);
-  card.innerHTML=`
-    <div class="frame">
-      <img src="assets/img/pre-reveal-glitch.gif" alt="Mystery #${id}" data-revealed="0"/>
-      <button class="reveal-btn" data-i="${i}">REVEAL ▸</button>
-    </div>
-    <div class="meta"><span class="id">#${id}</span><span class="tier">MYSTERY</span></div>`;
-  cards.appendChild(card);
+async function refreshMinters(){
+  try{
+    const rp = new ethers.JsonRpcProvider(RPC);
+    const bp = new ethers.Contract(CONTRACT, abi, rp);
+    const count = Number(await bp.totalMinted());
+    const seen = new Set();
+    if(count > 0 && count <= 2000){ // loop ownerOf per token (only for manageable supply)
+      for(let i=0;i<count;i++){
+        try{ seen.add((await bp.ownerOf(i)).toLowerCase()); }catch(_){}
+      }
+    }
+    const el = $('#uniques');
+    if(el) el.textContent = seen.size ? fmt(seen.size) : (count>2000?'—':fmt(0));
+  }catch(e){ /* retry next tick */ }
 }
-cards.addEventListener('click', e=>{
+refreshStats(); setInterval(refreshStats, 15000);
+refreshMinters(); setInterval(refreshMinters, 30000);
+
+/* ---------- MYSTERY VAULT (owned NFTs, reveal gated on-chain) ---------- */
+const IMG_RAW = "https://raw.githubusercontent.com/golputin/bbppp/main/nfts";
+const cards = $('#cards');
+const vaultHead = document.querySelector('#vault .vault-head');
+
+function renderVaultEmpty(msg){
+  cards.innerHTML = `<div class="vault-empty"><strong>${msg}</strong><span class="dim">Connect Rabby/MetaMask & mint untuk isi vault.</span></div>`;
+}
+async function refreshVault(){
+  if(!connected){
+    renderVaultEmpty("VAULT KOSONG — BELUM CONNECT WALLET");
+    return;
+  }
+  try{
+    const rp = new ethers.JsonRpcProvider(RPC);
+    const bp = new ethers.Contract(CONTRACT, abi, rp);
+    const [bal, rev] = await Promise.all([ bp.balanceOf(account), bp.revealed() ]);
+    if(Number(bal)===0){
+      renderVaultEmpty("VAULT KOSONG — WALLET INI BELUM MINT");
+      return;
+    }
+    cards.innerHTML='';
+    const owned = [];
+    for(let i=0;i<Number(bal);i++) owned.push(Number(await bp.tokenOfOwnerByIndex(account,i)));
+    for(const id of owned){
+      const card=document.createElement('div'); card.className='card'; card.id='card-'+id;
+      card.innerHTML=`
+        <div class="frame">
+          <img data-id="${id}" data-rev="${rev?1:0}" src="assets/img/pre-reveal-glitch.gif" alt="BitPunk #${id}"/>
+          <button class="reveal-btn" data-id="${id}">${rev?'REVEAL ▸':'LOCKED 🔒'}</button>
+        </div>
+        <div class="meta"><span class="id">#${id}</span><span class="tier">${rev?'MYSTERY':'NOT REVEALED'}</span></div>`;
+      cards.appendChild(card);
+    }
+  }catch(e){ renderVaultEmpty("GAGAL BACA VAULT"); }
+}
+cards.addEventListener('click', async e=>{
   const b=e.target.closest('.reveal-btn'); if(!b) return;
-  const i=+b.dataset.i;
-  const img=document.querySelector(`#card-${i} img`);
-  const card=document.getElementById('card-'+i);
+  const id=+b.dataset.id; if(isNaN(id)) return;
+  const card=document.getElementById('card-'+id); if(!card) return;
   if(card.classList.contains('revealed')) return;
-  const tier=getTier(i);
-  img.src=`assets/img/punk_${i}.png`;
-  card.classList.add('revealed');
-  card.querySelector('.tier').textContent=tier.toUpperCase();
-  logTape(`◈ REVEALED DEMO PUNK #${(i+4213)}`);
+  const rp = new ethers.JsonRpcProvider(RPC);
+  const bp = new ethers.Contract(CONTRACT, abi, rp);
+  let rev;
+  try{ rev = await bp.revealed(); }catch(_){ logTape('✗ Gagal baca state reveal'); return; }
+  if(!rev){ logTape('🔒 Reveal belum dibuka — nunggu owner normalize reveal.'); return; }
+  if(!card.classList.contains('revealed')){
+    const img=card.querySelector('img');
+    img.src=`${IMG_RAW}/${id}.png`;
+    img.onerror=()=>{ logTape(`✗ #${id} image gagal load`); };
+    card.classList.add('revealed');
+    let tier='BITPUNK';
+    try{ const m=await (await fetch(`https://consultancy-dogs-integrity-hosts.trycloudflare.com/metadata/${id}`)).json(); tier=(m.properties&&m.properties.tier)||tier; }catch(_){}
+    card.querySelector('.tier').textContent=tier.toUpperCase();
+    b.textContent='REVEALED ✓';
+    logTape(`◈ REVEALED #${id} — ${tier.toUpperCase()}`);
+  }
 });
-function getTier(i){ const r=((i+3)%7); if(r===6)return 'legendary'; if(r>=4)return 'epic'; if(r>=2)return 'rare'; return 'common'; }
+refreshVault();

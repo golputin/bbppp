@@ -40,12 +40,11 @@ function baseUrl(req) {
 }
 
 function normalizeMeta(m, base) {
-  // force https for image host (marketplaces reject http)
-  const imgHost = base.replace(/^http:\/\//, "https://");
+  // image served from stable public GitHub raw (permanent); metadata host derived from request
   return {
     name: m.name,
     description: m.description,
-    image: `${imgHost}/images/${m.tokenId}.png`,
+    image: `${process.env.PUBLIC_IMG || "https://raw.githubusercontent.com/golputin/bbppp/main/nfts"}/${m.tokenId}.png`,
     properties: { tier: m.tier },
     attributes: m.attributes,
   };
