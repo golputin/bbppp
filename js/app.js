@@ -1,7 +1,7 @@
 /* BitPunks site — real mint on Robinhood Chain 4663, dual-path web(5)/agent(15) */
 const $ = s => document.querySelector(s);
 
-const CONTRACT = "0x848b7B8BE48eA87368d783D4bA0A60480d9C0052";
+const CONTRACT = "0x81f33775a7a0BF5832d7236E83b80AFDB69bfE73";
 const CHAIN_ID = 4663;
 const RPC = "https://rpc.mainnet.chain.robinhood.com";
 const API = "https://consultancy-dogs-integrity-hosts.trycloudflare.com";
