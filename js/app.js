@@ -76,6 +76,27 @@ btnMint.disabled=true;
 function setBusy(b){ btnMint.disabled = b || !connected; btnMint.textContent = b?'MINTING…':(connected?'MINT NOW':'CONNECT WALLET TO MINT'); }
 function logTape(m){ const t=$('#tape'); t.insertAdjacentHTML('afterbegin',`<div>${m}</div>`); }
 
+/* ---------- LIVE SUPPLY (read-only, no wallet needed) ---------- */
+const fmt = n => n.toLocaleString('en-US');
+async function refreshStats(){
+  try{
+    const rp = new ethers.JsonRpcProvider(RPC);
+    const bp = new ethers.Contract(CONTRACT, abi, rp);
+    const [tm, ms, max] = await Promise.all([
+      bp.totalMinted(), bp.mintPrice(), bp.MAX_SUPPLY()
+    ]);
+    const mintedEl = $('#minted'), metM = $('#met-minted'), metR = $('#met-remain');
+    const left = Number(max) - Number(tm);
+    if(mintedEl) mintedEl.textContent = `${fmt(Number(tm))} / ${fmt(Number(max))}`;
+    if(metM) metM.textContent = `${fmt(Number(tm))} / ${fmt(Number(max))}`;
+    if(metR) metR.textContent = `${fmt(left)} punks remaining`;
+    const totalEl = $('#total');
+    if(totalEl) totalEl.textContent = `${ethers.formatEther(ms)} ETH`;
+  }catch(e){ /* RPC hiccup — retry next tick */ }
+}
+refreshStats();
+setInterval(refreshStats, 15000);
+
 /* ---------- REVEAL GALLERY (demo) ---------- */
 const TOTAL=16;
 const cards=$('#cards');
