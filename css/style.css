@@ -125,6 +125,30 @@ body{
 .card:hover .reveal-btn{opacity:1}
 .card.revealed .reveal-btn{opacity:0;pointer-events:none}
 
+/* ---------- AGENT MINT ---------- */
+.agent{max-width:1180px;margin:0 auto 70px;padding:0 24px}
+.agent h2{font-size:30px;margin-bottom:6px}
+.agent-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:26px}
+.agent-card{
+  border:1px solid var(--line);background:linear-gradient(160deg,rgba(11,20,31,.9),rgba(10,30,20,.5));
+  padding:26px;border-radius:6px;position:relative;overflow:hidden;
+}
+.agent-card::before{content:'';position:absolute;inset:0 0 auto 0;height:2px;
+  background:linear-gradient(90deg,var(--accent),transparent)}
+.agent-card h3{font-size:13px;letter-spacing:2px;margin:14px 0 12px;color:var(--accent)}
+.agent-icon{font-size:34px;line-height:1}
+.agent-card ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px;font-size:13px;color:#c7d3c9}
+.agent-card ol li::marker{color:var(--accent);font-weight:700}
+.agent-card code{background:#0e1a28;border:1px solid var(--line);padding:1px 6px;font-family:var(--mono);font-size:11px;color:#7dffa8}
+.agent-stats{display:flex;gap:12px;margin-top:22px}
+.agent-stats div{flex:1;border-top:1px solid var(--line);padding-top:12px}
+.agent-stats span{display:block;font-size:10px;color:var(--dim);letter-spacing:1px;margin-bottom:6px}
+.agent-stats strong{font-size:16px;color:#fff}
+.skill-box{margin-top:18px;border:1px solid var(--line);background:#0d1a26;padding:14px;border-radius:4px}
+.skill-line{font-family:var(--mono);font-size:12px;color:#7dffa8;word-break:break-all;margin-bottom:12px}
+.hint{margin-top:12px}
+@media(max-width:900px){.agent-grid{grid-template-columns:1fr}}
+
 /* ---------- RECENT ---------- */
 .recent{max-width:1180px;margin:0 auto 70px;padding:0 24px}
 .recent h2{font-size:26px;margin-bottom:16px}

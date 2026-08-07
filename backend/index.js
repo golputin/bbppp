@@ -36,7 +36,7 @@ app.use(express.json());
 
 // ---------- helpers ----------
 function baseUrl(req) {
-  return `${req.protocol}://${req.get("host")}`;
+  return `${req.protocol}://${req.get("host")}`.replace(/^http:\/\//, "https://");
 }
 
 function normalizeMeta(m, base) {

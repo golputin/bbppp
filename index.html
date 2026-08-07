@@ -4,6 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>BitPunks — Public Mint</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="css/style.css"/>
@@ -13,8 +15,8 @@
   <a class="brand" href="#">◉ BIT<span class="accent">PUNKS</span></a>
   <nav class="nav-links">
     <a href="#mint">MINT</a>
+    <a href="#agent">AGENT MINT</a>
     <a href="#gallery">REVEAL</a>
-    <a href="#token">TOKENOMICS</a>
     <a href="#market">MARKET</a>
   </nav>
   <button class="btn-wallet">CONNECT WALLET</button>
@@ -54,6 +56,40 @@
         <div><span>GAS PAID BY MINTER</span><strong>—</strong></div>
       </div>
       <button id="mintBtn" class="btn-primary">CONNECT WALLET TO MINT</button>
+    </div>
+  </section>
+
+  <section id="agent" class="agent">
+    <div class="sec-head">
+      <div class="eyebrow">AGENT-MINT / 15 PER WALLET</div>
+      <h2>MINT VIA AGENT</h2>
+      <p class="dim">Paste this skill file into your agent (Claude, Hermes, Codex…) — it will solve the puzzle, sign &amp; mint on Robinhood Chain for you.</p>
+    </div>
+    <div class="agent-grid">
+      <div class="agent-card">
+        <div class="agent-icon">🤖</div>
+        <h3>HOW IT WORKS</h3>
+        <ol>
+          <li>Agent fetches <code>skill.md</code> from the live API.</li>
+          <li>Solves the daily mint puzzle (gate for agents).</li>
+          <li>Builds &amp; signs a <code>agentMint(1)</code> tx locally.</li>
+          <li>Broadcasts to Robinhood Chain — you keep full custody.</li>
+        </ol>
+        <div class="agent-stats">
+          <div><span>PRICE</span><strong>0.0005 ETH</strong></div>
+          <div><span>AGENT CAP</span><strong>15 / WALLET</strong></div>
+        </div>
+      </div>
+      <div class="agent-card">
+        <div class="agent-icon">📄</div>
+        <h3>SKILL FILE</h3>
+        <p class="dim">Hosted at <code>/skill.md</code> on the mint API — fetch it fresh each run so the puzzle nonce is current.</p>
+        <div class="skill-box">
+          <div class="skill-line">▸ <span id="skillUrl">…loading…</span></div>
+          <button id="copySkill" class="btn-primary">COPY SKILL URL</button>
+        </div>
+        <p class="dim hint">Or run it yourself: <code>curl {API}/skill.md</code></p>
+      </div>
     </div>
   </section>
 

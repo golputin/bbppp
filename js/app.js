@@ -4,6 +4,7 @@ const $ = s => document.querySelector(s);
 const CONTRACT = "0x848b7B8BE48eA87368d783D4bA0A60480d9C0052";
 const CHAIN_ID = 4663;
 const RPC = "https://rpc.mainnet.chain.robinhood.com";
+const API = "https://consultancy-dogs-integrity-hosts.trycloudflare.com";
 
 const abi = [
   "function webMint(uint256 qty) payable",
@@ -47,13 +48,13 @@ btn.addEventListener('click', async ()=>{
       provider = new ethers.BrowserProvider(window.ethereum);
       // ensure RH chain
       const net = await window.ethereum.request({method:'eth_chainId'});
-      if(parseInt(net,16)!==CHAIN_ID){ try{await switchToHood();}catch(_){ logTape('⚠ Switch chain ke Robinhood dulu di wallet lo'); } }
+      if(parseInt(net,16)!==CHAIN_ID){ try{await switchToHood();}catch(_){ logTape('⚠ Switch to Robinhood Chain in your wallet first'); } }
       const a=await provider.send('eth_requestAccounts',[]);
       setConnected(a[0]);
       refreshVault();
     }catch(e){ logTape('⚠ '+ (e.message||'wallet error')); }
   } else {
-    logTape('⚠ No wallet detected. Mint manual butuh Rabby/MetaMask + chain Robinhood (4663).');
+    logTape('⚠ No wallet detected. Manual mint needs Rabby/MetaMask + Robinhood Chain (4663).');
     setConnected(null);
   }
 });
@@ -124,11 +125,11 @@ const cards = $('#cards');
 const vaultHead = document.querySelector('#vault .vault-head');
 
 function renderVaultEmpty(msg){
-  cards.innerHTML = `<div class="vault-empty"><strong>${msg}</strong><span class="dim">Connect Rabby/MetaMask & mint untuk isi vault.</span></div>`;
+  cards.innerHTML = `<div class="vault-empty"><strong>${msg}</strong><span class="dim">Connect Rabby/MetaMask &amp; mint to fill your vault.</span></div>`;
 }
 async function refreshVault(){
   if(!connected){
-    renderVaultEmpty("VAULT KOSONG — BELUM CONNECT WALLET");
+    renderVaultEmpty("EMPTY VAULT — WALLET NOT CONNECTED");
     return;
   }
   try{
@@ -136,7 +137,7 @@ async function refreshVault(){
     const bp = new ethers.Contract(CONTRACT, abi, rp);
     const [bal, rev] = await Promise.all([ bp.balanceOf(account), bp.revealed() ]);
     if(Number(bal)===0){
-      renderVaultEmpty("VAULT KOSONG — WALLET INI BELUM MINT");
+      renderVaultEmpty("EMPTY VAULT — NO PUNKS ON THIS WALLET");
       return;
     }
     cards.innerHTML='';
@@ -152,7 +153,7 @@ async function refreshVault(){
         <div class="meta"><span class="id">#${id}</span><span class="tier">${rev?'MYSTERY':'NOT REVEALED'}</span></div>`;
       cards.appendChild(card);
     }
-  }catch(e){ renderVaultEmpty("GAGAL BACA VAULT"); }
+  }catch(e){ renderVaultEmpty("FAILED TO LOAD VAULT"); }
 }
 cards.addEventListener('click', async e=>{
   const b=e.target.closest('.reveal-btn'); if(!b) return;
@@ -162,12 +163,12 @@ cards.addEventListener('click', async e=>{
   const rp = new ethers.JsonRpcProvider(RPC);
   const bp = new ethers.Contract(CONTRACT, abi, rp);
   let rev;
-  try{ rev = await bp.revealed(); }catch(_){ logTape('✗ Gagal baca state reveal'); return; }
-  if(!rev){ logTape('🔒 Reveal belum dibuka — nunggu owner normalize reveal.'); return; }
+  try{ rev = await bp.revealed(); }catch(_){ logTape('✗ Failed to read reveal state'); return; }
+  if(!rev){ logTape('🔒 Reveal not opened yet — waiting for the owner to flip reveal.'); return; }
   if(!card.classList.contains('revealed')){
     const img=card.querySelector('img');
     img.src=`${IMG_RAW}/${id}.png`;
-    img.onerror=()=>{ logTape(`✗ #${id} image gagal load`); };
+    img.onerror=()=>{ logTape(`✗ #${id} image failed to load`); };
     card.classList.add('revealed');
     let tier='BITPUNK';
     try{ const m=await (await fetch(`https://consultancy-dogs-integrity-hosts.trycloudflare.com/metadata/${id}`)).json(); tier=(m.properties&&m.properties.tier)||tier; }catch(_){}
@@ -177,3 +178,15 @@ cards.addEventListener('click', async e=>{
   }
 });
 refreshVault();
+
+/* ---------- AGENT MINT SKILL ---------- */
+const skillUrlEl = $('#skillUrl'), copyBtn = $('#copySkill');
+const skillUrl = `${API}/skill.md`;
+if(skillUrlEl) skillUrlEl.textContent = skillUrl;
+if(copyBtn) copyBtn.addEventListener('click', async ()=>{
+  try{
+    await navigator.clipboard.writeText(skillUrl);
+    copyBtn.textContent = 'COPIED ✓';
+    setTimeout(()=>copyBtn.textContent='COPY SKILL URL', 1500);
+  }catch(e){ logTape('✗ Copy failed'); }
+});
