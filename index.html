@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BitPunks — Public Mint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="#">◉ BIT<span class="accent">PUNKS</span></a>
+  <nav class="nav-links">
+    <a href="#mint">MINT</a>
+    <a href="#gallery">REVEAL</a>
+    <a href="#token">TOKENOMICS</a>
+    <a href="#market">MARKET</a>
+  </nav>
+  <button class="btn-wallet">CONNECT WALLET</button>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-left">
+      <div class="eyebrow">PUBLIC MINT / ROBINHOOD CHAIN</div>
+      <h1>MAKE YOUR<br/><span class="accent">PIXEL MOVE.</span></h1>
+      <p class="hero-sub">A limited run of market-minded punks. Public. On-chain. No allowlist. No soft close. Your token is a mystery until <strong>YOU REVEAL IT</strong>.</p>
+      <div class="hero-metrics">
+        <div><span class="met-label">SUPPLY LOCKED</span><span class="met-val">5,555 PUNKS</span></div>
+        <div><span class="met-label">PRICE</span><span class="met-val">0.0005 ETH</span></div>
+      </div>
+    </div>
+    <div class="hero-art">
+      <img src="assets/img/pre-reveal.png" alt="Mystery punk" id="heroPunk"/>
+    </div>
+  </section>
+
+  <section id="mint" class="mint">
+    <div class="mint-card">
+      <div class="eyebrow">ORDER TICKET</div>
+      <h2>MINT BITPUNKS</h2>
+      <div class="mint-row">
+        <label>QUANTITY<br/><span class="dim">MAX 5 PER WALLET</span></label>
+        <div class="qty">
+          <button id="decBtn">−</button>
+          <input id="qty" type="number" value="1" min="1" max="5"/>
+          <button id="incBtn">+</button>
+        </div>
+      </div>
+      <div class="mint-stats">
+        <div><span>MINTED</span><strong id="minted">0 / 5,555</strong></div>
+        <div><span>TOTAL</span><strong id="total">0.0005 ETH</strong></div>
+        <div><span>GAS PAID BY MINTER</span><strong>—</strong></div>
+      </div>
+      <button id="mintBtn" class="btn-primary">CONNECT WALLET TO MINT</button>
+    </div>
+  </section>
+
+  <section class="metrics">
+    <article><span class="met-label">MINTED</span><strong>5,555 / 5,555</strong><em>0 punks remaining</em></article>
+    <article><span class="met-label">UNIQUE MINTERS</span><strong id="uniques">1,247</strong><em>ON ROBINHOOD CHAIN</em></article>
+    <article><span class="met-label">MINT PRICE</span><strong>0.0005 ETH</strong><em>GAS PAID SEPARATELY</em></article>
+  </section>
+
+  <section id="gallery" class="gallery">
+    <div class="sec-head"><div class="eyebrow">MYSTERY VAULT</div><h2>REVEAL YOUR PUNK</h2>
+      <p class="dim">Hover a card, click <strong>REVEAL</strong> to flip the mystery.</p></div>
+    <div id="cards" class="cards"></div>
+  </section>
+
+  <section id="market" class="recent">
+    <div class="eyebrow">LIVE TAPE</div>
+    <h2>RECENT REVEALS &amp; MINTS</h2>
+    <div class="tape" id="tape"><span class="dim">Indexer live — waiting for first mints…</span></div>
+  </section>
+</main>
+
+<footer>
+  <span>BITPUNKS © 2026 · On-chain, no allowlist</span>
+  <span class="accent">ROBINHOOD CHAIN · PIXEL PERFECT</span>
+</footer>
+
+<script src="js/app.js"></script>
+</body>
+</html>
