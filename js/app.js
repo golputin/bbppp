@@ -1,7 +1,7 @@
 /* BitPunks site — real mint on Robinhood Chain 4663, dual-path web(5)/agent(15) */
 const $ = s => document.querySelector(s);
 
-const CONTRACT = "0x3Af616FeadF3f9F8E90DFFE4f7063c2570b8e0eD";
+const CONTRACT = "0x848b7B8BE48eA87368d783D4bA0A60480d9C0052";
 const CHAIN_ID = 4663;
 const RPC = "https://rpc.mainnet.chain.robinhood.com";
 
@@ -42,13 +42,13 @@ btn.addEventListener('click', async ()=>{
       provider = new ethers.BrowserProvider(window.ethereum);
       // ensure RH chain
       const net = await window.ethereum.request({method:'eth_chainId'});
-      if(parseInt(net,16)!==CHAIN_ID){ try{await switchToRH();}catch(_){} }
+      if(parseInt(net,16)!==CHAIN_ID){ try{await switchToHood();}catch(_){ logTape('⚠ Switch chain ke Robinhood dulu di wallet lo'); } }
       const a=await provider.send('eth_requestAccounts',[]);
       setConnected(a[0]);
     }catch(e){ logTape('⚠ '+ (e.message||'wallet error')); }
   } else {
-    setConnected('0x1b04BEB5');
-    logTape('⚠ No wallet injected — demo mode. Use MetaMask / Rabby on Robinhood Chain.');
+    logTape('⚠ No wallet detected. Mint manual butuh Rabby/MetaMask + chain Robinhood (4663).');
+    setConnected(null);
   }
 });
 
