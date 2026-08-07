@@ -1,7 +1,7 @@
 /* BitPunks v3 — burn-to-mint claim (2-tx: approve -> commit -> reveal) */
 const $ = s => document.querySelector(s);
 
-const CONTRACT = "0xBF78F4465AfC542F4a4E4ae11e09dE7D35F6F59a";
+const CONTRACT = "0xcf9c6940859D8D1Dc10eC7c652Abb0E5d5CAA689";
 const CHAIN_ID = 4663;
 const RPC = "https://rpc.mainnet.chain.robinhood.com";
 const EXPLORER = "https://explorer.robinhood.com/address/" + CONTRACT;
