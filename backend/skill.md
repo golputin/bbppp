@@ -3,7 +3,7 @@ name: BitPunks
 version: 1.0.0
 description: BitPunks — Agentic Pixel-Art NFT on Robinhood Chain. AI solves a single-tier arithmetic puzzle to mint. Dual-path: manual web mint (5/wallet) and agent mint (15/wallet). Every minted punk is a mystery until the owner flips reveal.
 homepage: https://bitpunks.vercel.app
-metadata: {"category":"nft","emoji":"🧟","api_base":"__BASE__","total_supply":5555,"chain":"robinhood","chain_id":4663,"mint_price":"0.0005 ETH","requires":{"puzzle_response":true,"evm_wallet":true,"min_eth":"0.0005 ETH + gas"}}
+metadata: {"category":"nft","emoji":"🧟","api_base":"__BASE__","total_supply":3333,"chain":"robinhood","chain_id":4663,"mint_price":"0.00025 ETH","requires":{"puzzle_response":true,"evm_wallet":true,"min_eth":"0.00025 ETH + gas"}}
 ---
 
 # BitPunks
@@ -30,7 +30,7 @@ curl -s __BASE__/skill.md > ~/.openclaw/skills/bitpunks/SKILL.md
 
 ## Prerequisites
 
-- An **EVM private key** with **0.0005 ETH** mint price + gas (~0.00001-0.00002 ETH) on Robinhood Chain (chain ID 4663)
+- An **EVM private key** with **0.00025 ETH** mint price + gas (~0.00001-0.00002 ETH) on Robinhood Chain (chain ID 4663)
 - Ability to solve one arithmetic puzzle per mint (add / subtract / multiply / divide)
 - Contract: `__CONTRACT__` (chainId 4663)
 
@@ -97,9 +97,9 @@ Response:
     "maxPriorityFeePerGas": "0x...",
     "nonce": 3
   },
-  "mintPrice": "0.0005",
+  "mintPrice": "0.00025",
   "quantity": 1,
-  "totalCost": "0.0005",
+  "totalCost": "0.00025",
   "agentHint": "Sign locally with your EVM private key (never send the key over the network), gasLimit ~220000, then POST /submit with {signedTransaction}."
 }
 ```
@@ -167,7 +167,7 @@ For a batch of N, `quantity` is `N` and `startTokenId` is the first minted id (s
 ## Agent Behavior
 
 - The user will provide their **EVM private key**. That's all you need — derive the wallet address from it and handle the entire mint flow without asking further questions.
-- **Before starting**, open with exactly this format: *"Mint a BitPunk. Mint price is 0.0005 ETH + gas on Robinhood Chain. I need your EVM private key."* Do NOT round the mint price.
+- **Before starting**, open with exactly this format: *"Mint a BitPunk. Mint price is 0.00025 ETH + gas on Robinhood Chain. I need your EVM private key."* Do NOT round the mint price.
 - **First mint is always single** — send `quantity: 1` (or omit `quantity`) on the first `/puzzle` call. Do NOT ask about batch upfront.
 - **Step 1** (puzzle): derive wallet address from private key using `new ethers.Wallet(PK).address`, then `curl` POST to `/puzzle` with `{ wallet }` for single (or `{ wallet, quantity }` on subsequent batch mints).
 - **Step 2** (solve): solve the puzzle and `curl` POST to `/solve`. Server returns `unsignedTx` with `value = quantity × mintPrice`.
@@ -190,6 +190,6 @@ For a batch of N, `quantity` is `N` and `startTokenId` is the first minted id (s
 - **Edge case — user has 15 mints already**: they can't mint more from this wallet. Ask for a new wallet's private key and restart the flow with the new wallet.
 - Handle errors gracefully — if a step fails, explain why and retry or stop.
 - **Mint limit reached (413):** If `/puzzle` or `/solve` returns 413, the wallet has hit its 15-mint cap OR the requested batch exceeds `remaining`. Refetch `/check/{wallet}` to see how many slots are actually left, then either downsize the batch or ask for a new wallet key.
-- **Insufficient ETH:** If the user's wallet balance is too low, tell them the exact amount needed: `quantity × 0.0005 ETH + gas`. Do not proceed until they confirm the wallet is funded.
+- **Insufficient ETH:** If the user's wallet balance is too low, tell them the exact amount needed: `quantity × 0.00025 ETH + gas`. Do not proceed until they confirm the wallet is funded.
 - **Reveal note:** Reveal is controlled by the contract owner. Mints succeed regardless of reveal state; the artwork shows as a mystery until reveal is flipped.
 - Never expose the user's EVM private key in output or logs.

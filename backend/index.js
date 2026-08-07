@@ -27,8 +27,8 @@ const CONTRACT = DEPLOY.address;
 const provider = new ethers.JsonRpcProvider(RPC, CHAIN_ID);
 
 // metadata
-const MANIFEST = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "rb_out5555", "manifest.json"), "utf8"));
-const IMG_DIR = path.join(__dirname, "..", "rb_out5555", "png");
+const MANIFEST = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "rb_out3333", "manifest.json"), "utf8"));
+const IMG_DIR = path.join(__dirname, "..", "rb_out3333", "png");
 
 const app = express();
 app.use(cors());
