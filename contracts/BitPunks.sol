@@ -103,7 +103,9 @@ contract BitPunks is ERC721, ERC721Enumerable, Ownable {
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         require(_exists(tokenId), "nonexistent");
         string memory base = baseURI;
-        return bytes(base).length > 0 ? string(abi.encodePacked(base, tokenId.toString())) : "";
+        return bytes(base).length > 0
+            ? string(abi.encodePacked(base, tokenId.toString(), ".json"))
+            : "";
     }
 
     function supportsInterface(bytes4 iface) public view override(ERC721, ERC721Enumerable) returns (bool) {
