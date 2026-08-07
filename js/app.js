@@ -81,7 +81,7 @@ $('#mintBtn').addEventListener('click', async ()=>{
 });
 btnMint.disabled=true;
 function setBusy(b){ btnMint.disabled = b || !connected; btnMint.textContent = b?'MINTING…':(connected?'MINT NOW':'CONNECT WALLET TO MINT'); }
-function logTape(m){ const t=$('#tape'); t.insertAdjacentHTML('afterbegin',`<div>${m}</div>`); }
+function logTape(m){ const t=document.getElementById('tape'); if(!t){ console.log('[BitPunks] '+m); return; } t.insertAdjacentHTML('afterbegin',`<div>${m}</div>`); }
 
 /* ---------- LIVE SUPPLY + UNIQUE MINTERS (read-only, no wallet needed) ---------- */
 const fmt = n => n.toLocaleString('en-US');
