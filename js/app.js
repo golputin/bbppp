@@ -102,6 +102,8 @@ async function refreshStats(){
   }catch(e){ /* RPC hiccup — retry next tick */ }
 }
 async function refreshMinters(){
+  const el = $('#uniques');
+  if(el && el.textContent === '—') el.textContent = '…'; // loading state
   try{
     const rp = new ethers.JsonRpcProvider(RPC);
     const bp = new ethers.Contract(CONTRACT, abi, rp);
@@ -112,7 +114,6 @@ async function refreshMinters(){
         try{ seen.add((await bp.ownerOf(i)).toLowerCase()); }catch(_){}
       }
     }
-    const el = $('#uniques');
     if(el) el.textContent = seen.size ? fmt(seen.size) : (count>2000?'—':fmt(0));
   }catch(e){ /* retry next tick */ }
 }
