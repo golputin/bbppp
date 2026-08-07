@@ -1,0 +1,13 @@
+# secrets — NEVER commit private keys
+.env
+pk*.txt
+*.pem
+deployed.json
+
+# deps / heavy
+node_modules/
+artifacts/
+cache/
+rb_out*/
+nfts/
+*.gif
