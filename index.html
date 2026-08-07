@@ -3,163 +3,77 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>BitPunks — Public Mint</title>
+<title>BitPunks — Claim a BitPunk</title>
 <link rel="icon" type="image/x-icon" href="favicon.ico?v=2"/>
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=2"/>
 <link rel="icon" type="image/png" sizes="64x64" href="favicon-64.png?v=2"/>
 <link rel="apple-touch-icon" href="apple-touch-icon.png?v=2"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
 <header class="nav">
   <a class="brand" href="#">◉ BIT<span class="accent">PUNKS</span></a>
   <nav class="nav-links">
-    <a href="#mint">MINT</a>
-    <a href="#agent">AGENT MINT</a>
-    <a href="#gallery">REVEAL</a>
-    <a href="#faq">FAQ</a>
+    <a href="#claim">Claim</a>
+    <a href="#how">How it works</a>
+    <a href="#reference">Reference</a>
   </nav>
-  <button class="btn-wallet">CONNECT WALLET</button>
+  <button id="connectBtn" class="btn-wallet">Connect</button>
 </header>
 
 <main>
-  <!-- ============ HERO ============ -->
-  <section class="hero">
-    <div class="hero-left">
-      <div class="eyebrow">PUBLIC MINT · ROBINHOOD CHAIN</div>
-      <h1>MAKE YOUR<br/><span class="accent">PIXEL MOVE.</span></h1>
-      <p class="hero-sub">A limited collection of pixel punks, minted on Robinhood Chain.<br/>
-        No allowlist.<br/>
-        No whitelist.<br/>
-        No presale.<br/>
-        Every mint is random.<br/>
-        Your BitPunk remains a mystery until <strong>YOU REVEAL IT</strong>.</p>
-      <div class="hero-metrics">
-        <div><span class="met-label">SUPPLY LOCKED</span><span class="met-val">3,333 PUNKS</span></div>
-        <div><span class="met-label">PRICE</span><span class="met-val">0.00025 ETH</span></div>
-      </div>
-      <!-- mint progress bar (neonnodes style) -->
-      <div class="mint-progress">
-        <div class="mint-progress-head">
-          <span id="progMinted">0</span><span class="dim"> / 3,333</span>
-        </div>
-        <div class="mint-progress-track"><div class="mint-progress-fill" id="progFill"></div></div>
-      </div>
-      <!-- skill CTA -->
-      <div class="skill-cta">
-        <a class="btn-primary btn-skill" href="#agent">→ SKILL.MD</a>
-        <span class="dim">Send this to your AI agent to mint</span>
-      </div>
-      <div class="code-line">$ <code>curl -s <span id="skillCmd">…</span></code></div>
+  <!-- ============ CLAIM ============ -->
+  <section id="claim" class="claim">
+    <div class="claim-intro">
+      <h1>Claim a BitPunk.</h1>
+      <p class="lead">Buy $KLANKO, burn some of it, and earn your winnings. The tokens are destroyed rather than collected, and which punk you get is decided <em>after</em> you sign — then one random pixel punk is minted to you.</p>
     </div>
-    <div class="hero-art">
-      <img src="assets/img/pre-reveal-glitch.gif" alt="Mystery punk" id="heroPunk"/>
+
+    <div class="claim-card">
+      <div class="claim-state" id="claimState">
+        <div class="claim-load" id="claimLoad">…</div>
+      </div>
+
+      <div class="claim-actions" id="claimActions">
+        <button id="approveBtn" class="btn-primary" hidden>Approve $KLANKO</button>
+        <button id="commitBtn" class="btn-primary" hidden>Burn 10 $KLANKO</button>
+        <button id="revealBtn" class="btn-primary" hidden disabled>Reveal appears after next block…</button>
+        <div id="emptyConnect" class="btn-primary btn-disabled">Claim open — connect to start</div>
+      </div>
+
+      <div class="tape" id="tape"><span class="dim">Connect your wallet on Robinhood Chain (4663).</span></div>
     </div>
   </section>
 
-  <!-- ============ HOW AI AGENTS MINT ============ -->
-  <section id="agent" class="protocol">
-    <div class="sec-head">
-      <div class="eyebrow">AGENT-MINT · 15 PER WALLET</div>
-      <h2>HOW AI AGENTS<br/>MINT BITPUNKS.</h2>
-      <p class="dim">Agents install a skill, receive a puzzle, solve the challenge, and broadcast the mint from their own wallet.</p>
-    </div>
+  <!-- ============ HOW ============ -->
+  <section id="how" class="how">
+    <h2>Why it is two transactions</h2>
+    <p>The first <strong>burns your KLANKO</strong> and writes down your address and the block you're in. Nothing is minted by it. The second <strong>draws your BitPunk</strong>, using the hash of the block after your commit as the entropy.</p>
+    <p>That hash does not exist while you are signing the first transaction. If the draw were decided inside the transaction that pays, anyone could simulate it, inspect the punk, and back out when it was a common one. Splitting the two takes that away from everybody.</p>
 
-    <div class="install-block">
-      <div class="install-label">INSTALL — SKILL.MD</div>
-      <div class="install-agents">OPENCLAW · CLAUDE · HERMES · CODEX · KIMI · ANY OTHER AI AGENT</div>
-      <div class="code-row">
-        <code>curl -s <span class="skill-here">…/skill.md</span></code>
-        <button class="btn-copy" data-copy-target="skillCmd">Copy install command</button>
-      </div>
-    </div>
+    <h2>How long you have</h2>
+    <p>Your commitment is anchored to a block. After one block you can reveal; the window to draw stays open for a while, so you don't lose your burn if you take your time. If it closes, re-anchoring just moves it to the current block for gas — nothing is paid twice, and the KLANKO stays burned.</p>
 
-    <div class="protocol-steps">
-      <article class="pstep">
-        <div class="pstep-num">STEP 1</div>
-        <h3>Read the skill</h3>
-        <div class="code-row small"><code>curl -X GET /skill.md</code><button class="btn-copy" data-copy="curl -X GET https://__SKILLCMD__">Copy</button></div>
-        <p>Agent fetches the skill file. Learns the four-step protocol.</p>
-      </article>
-      <article class="pstep">
-        <div class="pstep-num">STEP 2</div>
-        <h3>Get the puzzle</h3>
-        <div class="code-row small"><code>curl -X POST /puzzle</code><button class="btn-copy" data-copy="curl -X POST https://__SKILLCMD__/puzzle -H 'Content-Type: application/json' -d '{&quot;wallet&quot;:&quot;0x...&quot;}'">Copy</button></div>
-        <p>Server issues an arithmetic challenge. Solve it to unlock the mint.</p>
-      </article>
-      <article class="pstep">
-        <div class="pstep-num">STEP 3</div>
-        <h3>Solve &amp; sign</h3>
-        <div class="code-row small"><code>curl -X POST /solve</code><button class="btn-copy" data-copy="curl -X POST https://__SKILLCMD__/solve -H 'Content-Type: application/json' -d '{&quot;wallet&quot;:&quot;0x...&quot;,&quot;puzzleId&quot;:&quot;...&quot;,&quot;answer&quot;:42}'">Copy</button></div>
-        <p>Agent solves. Server returns an unsigned mint transaction.</p>
-      </article>
-      <article class="pstep">
-        <div class="pstep-num">STEP 4</div>
-        <h3>Submit mint</h3>
-        <div class="code-row small"><code>curl -X POST /submit</code><button class="btn-copy" data-copy="curl -X POST https://__SKILLCMD__/submit -H 'Content-Type: application/json' -d '{&quot;signedTransaction&quot;:&quot;0x...&quot;}'">Copy</button></div>
-        <p>Agent signs locally and broadcasts the tx from its own wallet.</p>
-      </article>
-    </div>
+    <h2>Which punk you get</h2>
+    <p>Token ids come out of a <strong>lazy Fisher-Yates shuffle</strong>. The draw indexes into whatever ids are still unclaimed, no id can come out twice, and the pick stays uniform over the remainder all the way down to the last one.</p>
   </section>
 
-  <!-- ============ MANUAL MINT ============ -->
-  <section id="mint" class="mint">
-    <div class="mint-card">
-      <div class="eyebrow">ORDER TICKET</div>
-      <h2>MINT BITPUNKS</h2>
-      <div class="mint-row">
-        <label>QUANTITY<br/><span class="dim">MAX 5 PER WALLET</span></label>
-        <div class="qty">
-          <button id="decBtn">−</button>
-          <input id="qty" type="number" value="1" min="1" max="5"/>
-          <button id="incBtn">+</button>
-        </div>
-      </div>
-      <div class="mint-stats">
-        <div><span>MINTED</span><strong id="minted">0 / 3,333</strong></div>
-        <div><span>TOTAL</span><strong id="total">0.00025 ETH</strong></div>
-        <div><span>GAS PAID BY MINTER</span><strong>—</strong></div>
-      </div>
-      <button id="mintBtn" class="btn-primary">CONNECT WALLET TO MINT</button>
-      <div class="tape" id="tape"><span class="dim">Connect your wallet to mint on Robinhood Chain (4663).</span></div>
-    </div>
-  </section>
-
-  <section class="metrics">
-    <article><span class="met-label">MINTED</span><strong id="met-minted">0 / 3,333</strong><em id="met-remain">3,333 punks remaining</em></article>
-    <article><span class="met-label">UNIQUE MINTERS</span><strong id="uniques">—</strong><em>ON ROBINHOOD CHAIN</em></article>
-    <article><span class="met-label">MINT PRICE</span><strong>0.00025 ETH</strong><em>GAS PAID SEPARATELY</em></article>
-  </section>
-
-  <!-- ============ MYSTERY VAULT ============ -->
-  <section id="gallery" class="gallery">
-    <div class="sec-head"><div class="eyebrow">MYSTERY VAULT</div><h2>REVEAL YOUR PUNK</h2>
-      <p class="dim">Connect your wallet — only <strong>your</strong> minted punks live here. Reveal unlocks when the owner flips it.</p></div>
-    <div id="cards" class="cards"></div>
-  </section>
-
-  <!-- ============ FAQ ============ -->
-  <section id="faq" class="faq">
-    <div class="sec-head"><div class="eyebrow">FAQ</div><h2>FREQUENTLY ASKED.</h2></div>
-    <details><summary>What is BitPunks?</summary><p>A limited collection of 3,333 pixel punks on Robinhood Chain. No allowlist, no whitelist, no presale — every mint is random.</p></details>
-    <details><summary>Who can mint?</summary><p>Anyone with a Robinhood Chain wallet. Manual mint: up to 5 per wallet. Agent mint via skill.md: up to 15 per wallet.</p></details>
-    <details><summary>What do I need to install?</summary><p>For manual mint, just a wallet (Rabby / MetaMask). For agent mint, your agent only needs the skill file — <code>curl -s https://__SKILLCMD__/skill.md</code>.</p></details>
-    <details><summary>What is the reveal mechanic?</summary><p>Every minted punk is a mystery until the owner flips reveal on-chain. Then the real pixel art is revealed from the public metadata.</p></details>
-    <details><summary>Why mint via an AI agent?</summary><p>Agents solve a proof-of-work puzzle and mint directly from your wallet — same price, no gas bidding, works from any terminal.</p></details>
+  <!-- ============ REFERENCE ============ -->
+  <section id="reference" class="reference">
+    <h2>Reference</h2>
+    <ul class="ref-list">
+      <li><span class="dim">Collection</span> <button class="ref-addr" data-copy="">0xBF78…F2F59a</button></li>
+      <li><span class="dim">$KLANKO</span> <button class="ref-addr" data-copy="">0x6d…008B</button></li>
+    </ul>
   </section>
 </main>
 
-<footer>
-  <div class="foot-left">
-    <span>BITPUNKS © 2026 · On-chain, no allowlist</span>
-    <span class="accent">ROBINHOOD CHAIN · PIXEL PERFECT</span>
-  </div>
-  <div class="foot-right">
-    <span class="dim">CONTRACT</span>
-    <button class="btn-copy" id="copyContract">0x81f3…e73</button>
-    <a href="https://explorer.robinhood.com/address/0x81f33775a7a0BF5832d7236E83b80AFDB69bfE73" target="_blank" rel="noopener">EXPLORER ↗</a>
+<footer class="foot">
+  <div>
+    <span>BITPUNKS · Robinhood Chain, id 4663.</span>
+    <a href="https://explorer.robinhood.com/address/0xBF78F0faf75544aaab4E41e11e9d07D..6F59a" target="_blank" rel="noopener">Contract on explorer ↗</a>
   </div>
 </footer>
 

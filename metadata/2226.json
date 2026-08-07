@@ -1,0 +1,36 @@
+{
+  "name": "BitPunk #2227",
+  "description": "Generative pixel-art NFT on the Robinhood chain.",
+  "image": "https://raw.githubusercontent.com/golputin/bbppp/main/nfts/2227.png",
+  "external_url": "https://bitpunks.vercel.app/#2226",
+  "attributes": [
+    {
+      "trait_type": "punks",
+      "value": "male4"
+    },
+    {
+      "trait_type": "top",
+      "value": "straight_hair_blonde"
+    },
+    {
+      "trait_type": "beard",
+      "value": "muttonchops"
+    },
+    {
+      "trait_type": "glasses",
+      "value": "vr"
+    },
+    {
+      "trait_type": "chain",
+      "value": "gold_chain"
+    },
+    {
+      "trait_type": "bg",
+      "value": 0
+    }
+  ],
+  "properties": {
+    "tier": "common",
+    "id": 2226
+  }
+}

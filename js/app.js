@@ -1,214 +1,215 @@
-/* BitPunks site — real mint on Robinhood Chain 4663, dual-path web(5)/agent(15) */
+/* BitPunks v3 — burn-to-mint claim (2-tx: approve -> commit -> reveal) */
 const $ = s => document.querySelector(s);
 
-const CONTRACT = "0x81f33775a7a0BF5832d7236E83b80AFDB69bfE73";
+const CONTRACT = "0xBF78F4465AfC542F4a4E4ae11e09dE7D35F6F59a";
 const CHAIN_ID = 4663;
 const RPC = "https://rpc.mainnet.chain.robinhood.com";
-const API = "https://consultancy-dogs-integrity-hosts.trycloudflare.com";
+const EXPLORER = "https://explorer.robinhood.com/address/" + CONTRACT;
 
-const abi = [
-  "function webMint(uint256 qty) payable",
-  "function webMintedPerWallet(address) view returns (uint256)",
+const bpAbi = [
+  "function commit() external",
+  "function reveal() external",
+  "function reAnchor() external",
+  "function commits(address) view returns (uint256 blockNum, bool drawn)",
+  "function pendingCount() view returns (uint256)",
   "function totalMinted() view returns (uint256)",
   "function MAX_SUPPLY() view returns (uint256)",
-  "function mintPrice() view returns (uint256)",
-  "function WEB_MINT_MAX() view returns (uint256)",
+  "function burnAmount() view returns (uint256)",
+  "function isOpen() view returns (bool)",
+  "function paymentToken() view returns (address)",
   "function ownerOf(uint256) view returns (address)",
+  "function tokenOfOwnerByIndex(address,uint256) view returns (uint256)",
   "function balanceOf(address) view returns (uint256)",
-  "function tokenOfOwnerByIndex(address, uint256) view returns (uint256)",
-  "function revealed() view returns (bool)",
-  "function tokenURI(uint256) view returns (string)",
+];
+const tAbi = [
+  "function approve(address,uint256) returns (bool)",
+  "function allowance(address,address) view returns (uint256)",
+  "function balanceOf(address) view returns (uint256)",
+  "function symbol() view returns (string)",
+  "function decimals() view returns (uint8)",
 ];
 
-/* ---------- QTY STEPPER ---------- */
-const qty = $('#qty');
-$('#decBtn').addEventListener('click',()=>qty.value=Math.max(1,+qty.value-1));
-$('#incBtn').addEventListener('click',()=>qty.value=Math.min(5,+qty.value+1));
-qty.addEventListener('change',()=>{ qty.value=Math.max(1,Math.min(5,+qty.value||1)); });
+let provider=null, signer=null, account=null, connected=false;
+let tokenAddr=null, sym="TOKEN", decimals=18, burnWei=0n;
+let commitBlock=0n, isOpen=false;
 
-/* ---------- WALLET ---------- */
-let connected=false, account=null, provider=null;
-const btn=$('.btn-wallet'), btnMint=$('#mintBtn');
-function setConnected(addr){
-  connected=!!addr; account=addr||null;
-  btn.textContent = connected? `◉ ${addr.slice(0,6)}…${addr.slice(-4)}` : 'CONNECT WALLET';
-  btnMint.textContent = connected? 'MINT NOW' : 'CONNECT WALLET TO MINT';
-  btnMint.disabled = !connected;
+const stateEl=$("#claimState"), loadEl=$("#claimLoad");
+const apprBtn=$("#approveBtn"), commBtn=$("#commitBtn"), revBtn=$("#revealBtn");
+const emptyC=$("#emptyConnect"), tapeEl=$("#tape");
+const connectBtn=$("#connectBtn");
+
+function logTape(m){ const t=document.getElementById('tape'); if(!t){console.log(m);return;} t.innerHTML=m; }
+function setState(html){ if(stateEl) stateEl.innerHTML = html; }
+function fmt(n){ return Number(n).toLocaleString('en-US'); }
+function show(btn,on){ if(btn) btn.hidden = !on; }
+const short = a => a.slice(0,6)+"…"+a.slice(-4);
+
+async function refreshStats(){
+  try{
+    const rp = new ethers.JsonRpcProvider(RPC);
+    const bp = new ethers.Contract(CONTRACT, bpAbi, rp);
+    const [total, max, pending, open, tokenA] = await Promise.all([
+      bp.totalMinted(), bp.MAX_SUPPLY(), bp.pendingCount(), bp.isOpen(), bp.paymentToken(),
+    ]);
+    isOpen = open;
+    tokenAddr = tokenA;
+    const left = Number(pending);
+    setState(`<div class="claim-status"><span class="pill ${open?'ok':'off'}">${open?'Claim open':'Paused'}</span><span class="meta">${fmt(Number(total))} / ${fmt(Number(max))}<span class="dim"> claimed</span></span></div>`);
+    if(tokenAddr){
+      const tok = new ethers.Contract(tokenAddr, tAbi, rp);
+      try{ sym = await tok.symbol(); decimals = Number(await tok.decimals()); }catch(_){}
+      burnWei = await bp.burnAmount();
+      commBtn.innerHTML = `Burn ${ethers.formatUnits(burnWei, decimals)} $${sym}`;
+      setRef(tokenAddr);
+    }
+    await renderActions();
+  }catch(e){ loadEl.textContent="…"; }
 }
-async function switchToHood(){
+function setRef(tok){
+  document.querySelectorAll('.ref-addr').forEach(b=>{
+    const li=b.closest('li');
+    const label=li?.querySelector('.dim')?.textContent||'';
+    const addr=(label.includes('KL')||label.includes('$')) ? tok : CONTRACT;
+    b.textContent=short(addr); b.dataset.copy=addr;
+  });
+}
+
+/* ---------- connect ---------- */
+async function switchToRH(){
   await provider.request({ method:'wallet_addEthereumChain', params:[{
     chainId:'0x1237', chainName:'Robinhood Chain', nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},
     rpcUrls:[RPC],
   }]});
 }
-btn.addEventListener('click', async ()=>{
-  if(connected){ setConnected(null); refreshVault(); return; }
-  if(window.ethereum){
-    try{
-      provider = new ethers.BrowserProvider(window.ethereum);
-      // ensure RH chain
-      const net = await window.ethereum.request({method:'eth_chainId'});
-      if(parseInt(net,16)!==CHAIN_ID){ try{await switchToHood();}catch(_){ logTape('⚠ Switch to Robinhood Chain in your wallet first'); } }
-      const a=await provider.send('eth_requestAccounts',[]);
-      setConnected(a[0]);
-      refreshVault();
-    }catch(e){ logTape('⚠ '+ (e.message||'wallet error')); }
-  } else {
-    logTape('⚠ No wallet detected. Manual mint needs Rabby/MetaMask + Robinhood Chain (4663).');
-    setConnected(null);
-  }
+connectBtn.addEventListener('click', async ()=>{
+  if(connected){ connected=false; account=null; connectBtn.textContent='Connect'; show(emptyC,true); renderActions(); return; }
+  if(!window.ethereum){ logTape('No wallet detected — use Rabby / MetaMask + Robinhood Chain.'); return; }
+  try{
+    provider = new ethers.BrowserProvider(window.ethereum);
+    const net = await window.ethereum.request({method:'eth_chainId'});
+    if(parseInt(net,16)!==CHAIN_ID){ try{ await switchToRH(); }catch(_){ logTape('Switch to Robinhood Chain (4663) in your wallet.'); } }
+    const accs = await provider.send('eth_requestAccounts',[]);
+    account = accs[0]; connected=true; signer = await provider.getSigner();
+    connectBtn.textContent = short(account);
+    show(emptyC,false);
+    await refreshStats();
+    await renderActions();
+  }catch(e){ logTape('Connect failed: '+(e.shortMessage||e.message)); }
 });
 
-/* ---------- MINT (web path, cap 5) ---------- */
-$('#mintBtn').addEventListener('click', async ()=>{
-  if(!connected){ logTape('⚠ Connect wallet first.'); return; }
+/* ---------- approve ---------- */
+async function refreshAllowance(){
+  if(!connected||!tokenAddr) return 0n;
+  const tok = new ethers.Contract(tokenAddr, tAbi, signer);
+  return await tok.allowance(account, CONTRACT);
+}
+apprBtn.addEventListener('click', async ()=>{
   setBusy(true);
   try{
-    const n=Math.max(1,Math.min(5,+qty.value||1));
-    if(!provider) provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
-    const bp = new ethers.Contract(CONTRACT, abi, signer);
-    const price = await bp.mintPrice();
-    const value = price * BigInt(n);
-    logTape(`⛏ Minting ${n} BitPunk${n>1?'s':''} (${ethers.formatEther(value)} ETH)`);
-    const tx = await bp.webMint(n, { value });
-    logTape(`⏳ Tx ${tx.hash.slice(0,10)}…`);
-    const rc = await tx.wait();
-    logTape(rc.status===1 ? '✅ Confirmed!' : '❌ Reverted');
-  }catch(e){
-    logTape('✗ '+(e.shortMessage||e.message||'mint failed'));
-  } finally{ setBusy(false); }
+    const tok = new ethers.Contract(tokenAddr, tAbi, signer);
+    logTape(`Approve $${sym}…`);
+    const tx = await tok.approve(CONTRACT, ethers.MaxUint256);
+    logTape(`Tx ${tx.hash.slice(0,10)}… waiting`);
+    await tx.wait();
+    logTape('✓ Approved. You can now burn.');
+    await renderActions();
+  }catch(e){ logTape('✗ '+(e.shortMessage||e.message)); }
+  finally{ setBusy(false); }
 });
-btnMint.disabled=true;
-function setBusy(b){ btnMint.disabled = b || !connected; btnMint.textContent = b?'MINTING…':(connected?'MINT NOW':'CONNECT WALLET TO MINT'); }
-function logTape(m){ const t=document.getElementById('tape'); if(!t){ console.log('[BitPunks] '+m); return; } t.insertAdjacentHTML('afterbegin',`<div>${m}</div>`); }
 
-/* ---------- LIVE SUPPLY + UNIQUE MINTERS (read-only, no wallet needed) ---------- */
-const fmt = n => n.toLocaleString('en-US');
-async function refreshStats(){
+/* ---------- commit (burn) ---------- */
+commBtn.addEventListener('click', async ()=>{
+  setBusy(true);
   try{
-    const rp = new ethers.JsonRpcProvider(RPC);
-    const bp = new ethers.Contract(CONTRACT, abi, rp);
-    const [tm, ms, max] = await Promise.all([
-      bp.totalMinted(), bp.mintPrice(), bp.MAX_SUPPLY()
-    ]);
-    const mintedEl = $('#minted'), metM = $('#met-minted'), metR = $('#met-remain');
-    const left = Number(max) - Number(tm);
-    if(mintedEl) mintedEl.textContent = `${fmt(Number(tm))} / ${fmt(Number(max))}`;
-    if(metM) metM.textContent = `${fmt(Number(tm))} / ${fmt(Number(max))}`;
-    if(metR) metR.textContent = `${fmt(left)} punks remaining`;
-    const totalEl = $('#total');
-    if(totalEl) totalEl.textContent = `${ethers.formatEther(ms)} ETH`;
-    // hero progress bar
-    const progFill=$('#progFill'), progMinted=$('#progMinted');
-    const pct = Number(max)>0 ? Number(tm)/Number(max)*100 : 0;
-    if(progFill) progFill.style.width = pct+'%';
-    if(progMinted) progMinted.textContent = fmt(Number(tm));
-  }catch(e){ /* RPC hiccup — retry next tick */ }
-}
-async function refreshMinters(){
-  const el = $('#uniques');
-  if(el && el.textContent === '—') el.textContent = '…'; // loading state
-  try{
-    const rp = new ethers.JsonRpcProvider(RPC);
-    const bp = new ethers.Contract(CONTRACT, abi, rp);
-    const count = Number(await bp.totalMinted());
-    const seen = new Set();
-    if(count > 0 && count <= 2000){ // loop ownerOf per token (only for manageable supply)
-      for(let i=0;i<count;i++){
-        try{ seen.add((await bp.ownerOf(i)).toLowerCase()); }catch(_){}
-      }
-    }
-    if(el) el.textContent = seen.size ? fmt(seen.size) : (count>2000?'—':fmt(0));
-  }catch(e){ /* retry next tick */ }
-}
-refreshStats(); setInterval(refreshStats, 15000);
-refreshMinters(); setInterval(refreshMinters, 30000);
+    const bp = new ethers.Contract(CONTRACT, bpAbi, signer);
+    logTape(`Burning ${ethers.formatUnits(burnWei, decimals)} $${sym}…`);
+    const tx = await bp.commit();
+    logTape(`Commit tx ${tx.hash.slice(0,10)}…`);
+    const rc = await tx.wait();
+    const c = await bp.commits(account);
+    commitBlock = c.blockNum;
+    logTape(`✓ Committed at block ${commitBlock.toString()}. Wait one block, then reveal.`);
+    await renderActions();
+    pollRevealReady();
+  }catch(e){ logTape('✗ '+(e.shortMessage||e.message)); }
+  finally{ setBusy(false); }
+});
 
-/* ---------- MYSTERY VAULT (owned NFTs, reveal gated on-chain) ---------- */
-const IMG_RAW = "https://raw.githubusercontent.com/golputin/bbppp/main/nfts";
-const cards = $('#cards');
-const vaultHead = document.querySelector('#vault .vault-head');
-
-function renderVaultEmpty(msg){
-  cards.innerHTML = `<div class="vault-empty"><strong>${msg}</strong><span class="dim">Connect Rabby/MetaMask &amp; mint to fill your vault.</span></div>`;
-}
-async function refreshVault(){
-  if(!connected){
-    renderVaultEmpty("EMPTY VAULT — WALLET NOT CONNECTED");
-    return;
-  }
+/* ---------- reveal ---------- */
+revBtn.addEventListener('click', async ()=>{
+  setBusy(true);
   try{
-    const rp = new ethers.JsonRpcProvider(RPC);
-    const bp = new ethers.Contract(CONTRACT, abi, rp);
-    const [bal, rev] = await Promise.all([ bp.balanceOf(account), bp.revealed() ]);
-    if(Number(bal)===0){
-      renderVaultEmpty("EMPTY VAULT — NO PUNKS ON THIS WALLET");
+    const bp = new ethers.Contract(CONTRACT, bpAbi, signer);
+    const tx = await bp.reveal();
+    const rc = await tx.wait();
+    logTape('✅ ' + (rc.status===1 ? 'Revealed! See your punk below.' : 'Reverted'));
+    await renderActions();
+    await renderVault();
+  }catch(e){ logTape('✗ '+(e.shortMessage||e.message)); }
+  finally{ setBusy(false); }
+});
+
+/* ---------- reveal readiness poll ---------- */
+async function pollRevealReady(){
+  const bp = new ethers.Contract(CONTRACT, bpAbi, provider);
+  for(let i=0;i<60;i++){
+    const c = await bp.commits(account);
+    if(c.drawn){ renderActions(); renderVault(); return; }
+    const cur = await provider.getBlockNumber();
+    if(Number(c.blockNum)>0 && cur >= Number(c.blockNum)+1){
+      show(revBtn,true); revBtn.disabled=false; revBtn.textContent='Reveal now';
+      logTape('Block ready — click REVEAL.');
       return;
     }
-    cards.innerHTML='';
-    const owned = [];
-    for(let i=0;i<Number(bal);i++) owned.push(Number(await bp.tokenOfOwnerByIndex(account,i)));
-    for(const id of owned){
-      const card=document.createElement('div'); card.className='card'; card.id='card-'+id;
-      card.innerHTML=`
-        <div class="frame">
-          <img data-id="${id}" data-rev="${rev?1:0}" src="assets/img/pre-reveal-glitch.gif" alt="BitPunk #${id}"/>
-          <button class="reveal-btn" data-id="${id}">${rev?'REVEAL ▸':'LOCKED 🔒'}</button>
-        </div>
-        <div class="meta"><span class="id">#${id}</span><span class="tier">${rev?'MYSTERY':'NOT REVEALED'}</span></div>`;
-      cards.appendChild(card);
-    }
-  }catch(e){ renderVaultEmpty("FAILED TO LOAD VAULT"); }
-}
-cards.addEventListener('click', async e=>{
-  const b=e.target.closest('.reveal-btn'); if(!b) return;
-  const id=+b.dataset.id; if(isNaN(id)) return;
-  const card=document.getElementById('card-'+id); if(!card) return;
-  if(card.classList.contains('revealed')) return;
-  const rp = new ethers.JsonRpcProvider(RPC);
-  const bp = new ethers.Contract(CONTRACT, abi, rp);
-  let rev;
-  try{ rev = await bp.revealed(); }catch(_){ logTape('✗ Failed to read reveal state'); return; }
-  if(!rev){ logTape('🔒 Reveal not opened yet — waiting for the owner to flip reveal.'); return; }
-  if(!card.classList.contains('revealed')){
-    const img=card.querySelector('img');
-    img.src=`${IMG_RAW}/${id}.png`;
-    img.onerror=()=>{ logTape(`✗ #${id} image failed to load`); };
-    card.classList.add('revealed');
-    let tier='BITPUNK';
-    try{ const m=await (await fetch(`https://consultancy-dogs-integrity-hosts.trycloudflare.com/metadata/${id}`)).json(); tier=(m.properties&&m.properties.tier)||tier; }catch(_){}
-    card.querySelector('.tier').textContent=tier.toUpperCase();
-    b.textContent='REVEALED ✓';
-    logTape(`◈ REVEALED #${id} — ${tier.toUpperCase()}`);
+    await new Promise(r=>setTimeout(r,3000));
   }
-});
-refreshVault();
-
-/* ---------- AGENT MINT SKILL + COPY BUTTONS ---------- */
-const API_HOST = API.replace(/^https?:\/\//,'');
-const skillCmdEl = $('#skillCmd'), skillHereEls = document.querySelectorAll('.skill-here');
-const skillUrl = `${API}/skill.md`;
-if(skillCmdEl) skillCmdEl.textContent = skillUrl;
-skillHereEls.forEach(el=>el.textContent=API_HOST);
-// fill any __SKILLCMD__ placeholders in data-copy attributes
-document.querySelectorAll('[data-copy]').forEach(btn=>{
-  if(btn.dataset.copy.includes('__SKILLCMD__')) btn.dataset.copy = btn.dataset.copy.split('__SKILLCMD__').join(API_HOST);
-});
-async function copyText(txt, btn){
-  try{
-    await navigator.clipboard.writeText(txt);
-    const old = btn.textContent;
-    btn.textContent = 'COPIED ✓';
-    setTimeout(()=>btn.textContent=old, 1500);
-  }catch(e){ logTape('✗ Copy failed'); }
 }
-document.querySelectorAll('.btn-copy').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    const t = btn.dataset.copy || btn.dataset.copyTarget;
-    if(t === 'skillCmd' && skillCmdEl) return copyText(skillCmdEl.textContent, btn);
-    if(t) return copyText(t, btn);
+
+/* ---------- actions ---------- */
+async function renderActions(){
+  if(!connected){ show(apprBtn,false); show(commBtn,false); show(revBtn,false); show(emptyC,true); return; }
+  const bp = new ethers.Contract(CONTRACT, bpAbi, signer);
+  const c = await bp.commits(account);
+  if(c.drawn){
+    show(apprBtn,false); show(commBtn,false); show(revBtn,false); show(emptyC,false);
+    setState(`<div class="claim-status"><span class="pill ok">Drawn</span><span class="meta">You already own your BitPunk.</span></div>`);
+    renderVault();
+    return;
+  }
+  if(Number(c.blockNum)>0){
+    show(apprBtn,false); show(commBtn,false); show(emptyC,false);
+    const cur = await provider.getBlockNumber();
+    if(cur >= Number(c.blockNum)+1){ show(revBtn,true); revBtn.disabled=false; revBtn.textContent='Reveal now'; }
+    else { show(revBtn,true); revBtn.disabled=true; revBtn.textContent='Waiting for next block…'; pollRevealReady(); }
+    return;
+  }
+  show(revBtn,false);
+  const alw = await refreshAllowance();
+  if(alw < burnWei){ show(apprBtn,true); show(commBtn,false); }
+  else { show(apprBtn,false); show(commBtn,true); }
+  show(emptyC,false);
+}
+
+/* ---------- vault ---------- */
+async function renderVault(){
+  if(!connected) return;
+  const bp = new ethers.Contract(CONTRACT, bpAbi, provider);
+  const bal = Number(await bp.balanceOf(account));
+  if(bal===0) return;
+  const ids=[];
+  for(let i=0;i<bal;i++) ids.push(Number(await bp.tokenOfOwnerByIndex(account,i)));
+  setState(`<div class="claim-status"><span class="pill ok">You own</span><span class="meta">${ids.map(id=>'#'+id).join(', ')}</span></div>`);
+}
+
+/* ---------- copy ---------- */
+document.querySelectorAll('.ref-addr').forEach(b=>{
+  b.addEventListener('click', async ()=>{
+    try{ await navigator.clipboard.writeText(b.dataset.copy||b.textContent); b.textContent='COPIED'; setTimeout(()=>setRef(tokenAddr),1200); }
+    catch(e){}
   });
 });
-const contractBtn=$('#copyContract');
-if(contractBtn) contractBtn.addEventListener('click', ()=>copyText(CONTRACT, contractBtn));
+
+/* ---------- boot ---------- */
+refreshStats();
+setInterval(refreshStats, 15000);
+setTimeout(()=>{ if(connected) renderActions(); }, 3000);
