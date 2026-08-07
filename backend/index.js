@@ -219,25 +219,11 @@ app.post("/submit", async (req, res) => {
 
 // ---------- skill.md (agent instructions) ----------
 app.get("/skill.md", (req, res) => {
-  res.type("text/markdown").send(`# BitPunks Agent Mint (skill.md)
-
-Mint price is **0.0005 ETH + gas** on Robinhood Chain (chainId 4663).
-You need the user's EVM private key to sign locally. **Never send the key over the network; never log it.**
-
-## Flow
-1. Ask the user for their EVM private key (or load from env) and wallet address.
-2. \`GET ${baseUrl(req)}/check/{wallet}\` — confirm remaining slots (agent cap 15/wallet).
-3. \`POST ${baseUrl(req)}/puzzle\` {\"wallet\": \"0x...\", \"quantity\": 1..min(remaining,15)} — get puzzleId + question.
-4. Solve the arithmetic question, then \`POST ${baseUrl(req)}/solve\` {\"wallet\", \"puzzleId\", \"answer\"} — returns an unsigned tx.
-5. **Sign locally** with ethers: gasLimit ~220000, maxFeePerGas / maxPriorityFeePerGas from the response.
-6. \`POST ${baseUrl(req)}/submit\` {\"signedTransaction\": \"0x...\"} — broadcast.
-
-## Rules
-- First mint always single; offer batch (max 5) only AFTER first success.
-- Check \`remaining\` before EVERY batch; never request more than remaining.
-- Never expose the private key in output/logs.
-- Contract: ${CONTRACT} (chainId 4663).
-`);
+  const base = baseUrl(req);
+  const content = fs.readFileSync(path.join(__dirname, "skill.md"), "utf8")
+    .split("__BASE__").join(base)
+    .split("__CONTRACT__").join(CONTRACT);
+  res.type("text/markdown").send(content);
 });
 
 app.listen(PORT, () => console.log(`BitPunks backend on :${PORT}`));
